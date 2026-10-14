@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Virtual environment
+.venv/
+venv/
+
+# Generated data (recreate with: python generate_data.py)
+data/raw/*
+data/processed/*
+data/output/*
+!data/**/.gitkeep
+
+# Editors and OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Excel / Power BI lock and temp files
+~$*
+*.pbix.bak
