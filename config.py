@@ -14,6 +14,11 @@ OUTPUT_DATA_DIR = PROJECT_ROOT / "data" / "output"
 SCHEMA_FILE = PROJECT_ROOT / "sql" / "01_create_schema.sql"
 DATABASE_FILE_NAME = "healthcare_analytics.db"            # saved in PROCESSED_DATA_DIR
 QUALITY_REPORT_FILE_NAME = "phase2_data_quality.json"     # saved in OUTPUT_DATA_DIR
+DATABASE_FILE = PROCESSED_DATA_DIR / DATABASE_FILE_NAME
+QUALITY_REPORT_FILE = OUTPUT_DATA_DIR / QUALITY_REPORT_FILE_NAME
+ANALYTICS_VIEWS_FILE = PROJECT_ROOT / "sql" / "02_create_analytics_views.sql"
+ANALYTICS_OUTPUT_DIR = OUTPUT_DATA_DIR / "analytics"
+EXCEL_REPORT_FILE = PROJECT_ROOT / "reports" / "healthcare_patient_flow_report.xlsx"
 
 # --- Defaults for the command line ----------------------------------------
 DEFAULT_SEED = 42

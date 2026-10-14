@@ -9,17 +9,16 @@ utilization, appointment status (completed, cancelled, no-show), and trends over
 > fictional. The data does not come from, represent, or describe any real person, hospital,
 > or clinic.
 
-## Planned workflow
+## Workflow
 
 ```
 synthetic data  ->  Python/Pandas cleaning  ->  SQL analysis  ->  Excel outputs  ->  Power BI dashboard
 ```
 
-Planned tools: Python, Pandas, SQL, Excel, Power BI. The synthetic data, the Python/Pandas
-cleaning and the SQLite database exist so far. SQL analysis, Excel outputs and the
-Power BI dashboard are not built yet (see [Roadmap](#roadmap)).
+Tools: Python, Pandas, SQL (SQLite), Excel and Power BI. Everything up to the Excel report
+exists so far. The Power BI dashboard is not built yet (see [Roadmap](#roadmap)).
 
-## Current status: Phases 1 and 2
+## Current status: Phases 1, 2 and 3
 
 **Phase 1: synthetic data**
 - A deterministic synthetic data generator: the same seed always gives the same files.
@@ -30,7 +29,14 @@ Power BI dashboard are not built yet (see [Roadmap](#roadmap)).
   loads them into a local SQLite database, and writes a data-quality report.
 - `sql/01_create_schema.sql` defines the database tables, keys, checks and indexes.
 
-Both phases are covered by automated tests (pytest).
+**Phase 3: SQL analytics and Excel report**
+- `sql/02_create_analytics_views.sql` calculates every KPI in SQL views.
+- `analyze_data.py` builds the views, checks that all breakdowns add up to the overall
+  totals, and exports six CSV files to `data/output/analytics/`.
+- `create_excel_report.py` writes the Excel workbook
+  `reports/healthcare_patient_flow_report.xlsx`.
+
+All three phases are covered by automated tests (pytest).
 
 ### Raw tables (Phase 1)
 
@@ -157,6 +163,112 @@ The schema also contains the following:
   - visit times present only for Completed appointments;
 - indexes on appointment date, status, department, provider and patient.
 
+## Phase 3: KPIs, SQL analytics and Excel report
+
+### KPI definitions
+
+The same definitions are used in SQL, Python, Excel and this README.
+
+| KPI | Formula |
+|---|---|
+| Total Appointments | All appointment records (every status) |
+| Unique Patients | Distinct patients with at least one appointment |
+| Completed Appointments | Appointments with `appointment_status = 'Completed'` |
+| Cancelled Appointments | Appointments with `appointment_status = 'Cancelled'` |
+| No Show Appointments | Appointments with `appointment_status = 'No Show'` |
+| Completion Rate | Completed Appointments / Total Appointments |
+| Cancellation Rate | Cancelled Appointments / Total Appointments |
+| No Show Rate | No Show Appointments / Total Appointments |
+| Average Wait Minutes | Average `wait_minutes`, Completed appointments only |
+| Average Visit Minutes | Average `visit_minutes`, Completed appointments only |
+| Available Slots | Sum of `provider_schedules.available_slots` |
+| Booking Rate | Total Appointments / Available Slots |
+| Completed Slot Utilization | Completed Appointments / Available Slots |
+
+These rules apply to every KPI:
+- A rate is left blank (`NULL` in SQL, an empty cell in Excel) when its denominator is 0.
+- Overall rates are calculated from overall counts, never by averaging department or
+  provider percentages.
+- Average durations for a group of rows are weighted by completed appointments.
+
+**Booking Rate vs. Completed Slot Utilization.** Every appointment, whatever its status,
+used a slot when it was booked:
+- **Booking Rate** counts Completed, Cancelled and No Show appointments. It shows how
+  much of the available capacity was booked.
+- **Completed Slot Utilization** counts only Completed appointments. It shows how much of
+  the capacity turned into a completed visit.
+- The gap between the two is the share of slots that were booked but not used for a
+  completed visit.
+
+### SQL views (`sql/02_create_analytics_views.sql`)
+
+The script drops and recreates every view, so it is safe to run again. Each view counts
+appointments and adds up capacity separately before joining the two, so neither side is
+multiplied by the join.
+
+| View | One row per | Capacity metrics |
+|---|---|---|
+| `vw_overall_kpis` | whole dataset (plus reporting period and unique patients) | Yes |
+| `vw_monthly_trends` | month (`YYYY-MM`) | Yes |
+| `vw_department_performance` | department, including any with no appointments | Yes |
+| `vw_provider_performance` | provider, including any with capacity but no appointments | Yes |
+| `vw_appointment_type_performance` | appointment type | No |
+| `vw_weekday_activity` | weekday (1 = Monday) | Yes |
+
+Appointment types have no capacity metrics because slots are not reserved per type, so
+there is no valid capacity denominator. Two helper views, `vw_appointment_details` and
+`vw_schedule_details`, add status flags, month and weekday to each row.
+
+`analyze_data.py` runs these steps:
+1. Applies the views.
+2. Queries each view in a fixed sort order.
+3. Runs 37 reconciliation checks:
+   - the overall totals match the database tables;
+   - Completed + Cancelled + No Show equals the total;
+   - each breakdown's counts and slots add up to the overall values;
+   - each breakdown's completed-weighted averages equal the overall averages.
+4. Exports the CSV files to `data/output/analytics/`:
+   - `overall_kpis.csv`
+   - `monthly_trends.csv`
+   - `department_performance.csv`
+   - `provider_performance.csv`
+   - `appointment_type_performance.csv`
+   - `weekday_activity.csv`
+
+Any mismatch stops the script with an error that lists the failed checks.
+
+### Excel workbook (`reports/healthcare_patient_flow_report.xlsx`)
+
+| Sheet | Contents |
+|---|---|
+| Summary | Title, reporting period, synthetic-data notice, 13 KPIs with definitions, and three charts: monthly appointment volume, appointments by status, appointments by department |
+| Monthly Trends | One row per month in date order: counts, status rates, average wait and visit, slots, booking rate, utilization, and a Total row |
+| Department Analysis | One row per department, sorted by department ID (the order in `config.py`) |
+| Provider Analysis | One row per provider, sorted by department ID and then provider ID; includes daily slot capacity |
+| Appointment Types | Volume, share of appointments, status rates and durations; no capacity metrics |
+| Data Quality | Audit sheet: synthetic-data status, Phase 2 row counts and validation checks (all 0), SQLite foreign-key check, Phase 3 reconciliation results. No other sheet uses it |
+| Appointment Data | Every processed appointment, as an Excel table with filters |
+| Capacity Data | Every provider clinic day with available slots and capacity, as an Excel table with filters |
+
+How the workbook is built:
+- **Values and formulas:** counts and average durations are the values from the SQL
+  views. Rates are Excel formulas such as `=IF(B5=0,"",C5/B5)`, with the numerator and
+  denominator cells on the same row, so they are blank instead of `#DIV/0!` when there is
+  nothing to divide by.
+- **Total rows:** each Total row sums the counts, recalculates the rates from those sums,
+  and weights the average durations by completed appointments.
+- **Dates:** dates and datetimes are real Excel date values, shown as `mm/dd/yyyy` and
+  `mm/dd/yyyy hh:mm`. IDs are stored as text.
+- **Layout:** analysis tables and data tables are Excel tables with filters and banded
+  rows, and header rows are frozen.
+- **Recalculation:** the workbook asks Excel to recalculate all formulas when it opens.
+  The script writes formulas without stored results, so open the file in Excel to see the
+  calculated rates.
+
+The workbook is a portfolio deliverable and is tracked by Git, unlike the files under
+`data/`. If `create_excel_report.py` says it cannot write the file, close the workbook in
+Excel and run it again.
+
 ## Setup and run (Windows PowerShell)
 
 Tested with Python 3.12 (pandas 3 needs Python 3.11 or newer). Run these from the project
@@ -176,8 +288,17 @@ python generate_data.py --appointments 5000 --seed 42
 # 4. Validate, clean and load into SQLite (data\processed and data\output)
 python prepare_data.py
 
-# 5. Run the tests
+# 5. Build the SQL views, check totals, export analysis CSVs (data\output\analytics)
+python analyze_data.py
+
+# 6. Create the Excel report (reports\healthcare_patient_flow_report.xlsx)
+python create_excel_report.py
+
+# 7. Run the tests
 python -m pytest -q
+
+# 8. Open the workbook in Excel
+Invoke-Item .\reports\healthcare_patient_flow_report.xlsx
 ```
 
 If PowerShell blocks `Activate.ps1`, run
@@ -194,10 +315,13 @@ Generator options:
 | `--output-dir` | `data\raw` | Folder for the CSV files |
 
 `prepare_data.py` options: `--raw-dir`, `--processed-dir` and `--output-dir`. The defaults
-are `data\raw`, `data\processed` and `data\output`.
+are `data\raw`, `data\processed` and `data\output`. `analyze_data.py` accepts
+`--database` and `--output-dir`; `create_excel_report.py` accepts `--database`,
+`--quality-report` and `--output`.
 
-Generated CSV files, the database and the JSON report are not tracked by git. Re-create
-them at any time with steps 3 and 4.
+Everything under `data\` (CSV files, the database, the JSON report and the analysis
+exports) is not tracked by Git. Re-create it at any time with steps 3 to 5. The Excel
+workbook in `reports\` is tracked.
 
 ## Folder structure
 
@@ -206,20 +330,29 @@ healthcare-patient-flow-analytics/
 ├── data/
 │   ├── raw/            # generated synthetic CSV files (Phase 1)
 │   ├── processed/      # cleaned CSV files + healthcare_analytics.db (Phase 2)
-│   └── output/         # phase2_data_quality.json (Phase 2); later: Excel outputs
+│   └── output/
+│       ├── phase2_data_quality.json   # Phase 2 data-quality report
+│       └── analytics/                 # Phase 3 analysis CSV exports
+├── reports/
+│   └── healthcare_patient_flow_report.xlsx   # Phase 3 Excel report (tracked by Git)
 ├── sql/
-│   └── 01_create_schema.sql   # SQLite tables, keys, checks, indexes
+│   ├── 01_create_schema.sql            # SQLite tables, keys, checks, indexes
+│   └── 02_create_analytics_views.sql   # KPI views
 ├── powerbi/            # (later phase) Power BI report file
 ├── screenshots/        # (later phase) dashboard screenshots
 ├── tests/
 │   ├── conftest.py
 │   ├── test_generate_data.py   # Phase 1 tests
-│   └── test_prepare_data.py    # Phase 2 tests
+│   ├── test_prepare_data.py    # Phase 2 tests
+│   ├── test_analytics.py       # Phase 3 SQL and analytics tests
+│   └── test_excel_report.py    # Phase 3 workbook tests
 ├── .gitignore
 ├── README.md
-├── config.py           # all settings (generator, file paths)
-├── generate_data.py    # Phase 1: synthetic data generator
-├── prepare_data.py     # Phase 2: validate, clean, load SQLite, quality report
+├── config.py               # all settings (generator, file paths)
+├── generate_data.py        # Phase 1: synthetic data generator
+├── prepare_data.py         # Phase 2: validate, clean, load SQLite, quality report
+├── analyze_data.py         # Phase 3: SQL views, reconciliation, CSV exports
+├── create_excel_report.py  # Phase 3: Excel workbook
 └── requirements.txt
 ```
 
@@ -229,8 +362,8 @@ healthcare-patient-flow-analytics/
 |---|---|---|
 | 1 | Project structure, synthetic data generator, tests | Done |
 | 2 | Validation, cleaning, derived fields, SQLite database, data-quality report, tests | Done |
-| 3 | SQL analysis queries for KPIs (volume, wait time, utilization, no-show rate) | Planned |
-| 4 | Excel summary outputs in `data/output` | Planned |
-| 5 | Power BI dashboard and screenshots | Planned |
+| 3 | SQL KPI views, reconciliation, analysis CSV exports, Excel report, tests | Done |
+| 4 | Power BI dashboard | Planned |
+| 5 | Final presentation: dashboard screenshots and final documentation | Planned |
 
 Planned phases are not built yet. Their details may change.
