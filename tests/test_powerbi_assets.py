@@ -64,7 +64,7 @@ DAX_MEASURES = [*KPI_COLUMNS, "Previous Month Appointments", "Month over Month C
 DATE = r"\d{4}-\d{2}-\d{2}"
 DATETIME = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
 # Phase 4B artifacts, created by hand in Power BI Desktop.
-PBIX = POWERBI / "healthcare_patient_flow_dashboard.pbix"
+PBIX = config.POWERBI_REPORT_FILE   # powerbi/healthcare_patient_flow_dashboard.pbix
 SCREENSHOTS = ["powerbi_operational_overview.png",
                "powerbi_capacity_provider_performance.png",
                "powerbi_patient_appointment_patterns.png"]
@@ -357,11 +357,11 @@ def test_theme_is_valid_json_with_required_colors():
     theme = json.loads(read_text("healthcare_theme.json"))
     text = json.dumps(theme).upper()
     for color in ["#1B2A41",   # dark navy: titles
-                  "#2F6DB5",   # medium blue: main chart colour
+                  "#2F6DB5",   # medium blue: main chart color
                   "#1A8A7D",   # teal: Completed
                   "#D97B29",   # orange: Cancelled
                   "#B4474F",   # muted red: No Show
-                  "#F4F6F8",   # light grey background
+                  "#F4F6F8",   # light gray background
                   "#252B33"]:  # dark body text
         assert color in text, color
     assert theme["dataColors"][0] == "#2F6DB5"

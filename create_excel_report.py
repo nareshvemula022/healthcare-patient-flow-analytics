@@ -40,6 +40,7 @@ from prepare_data import TABLES
 
 SHEET_NAMES = ["Summary", "Monthly Trends", "Department Analysis", "Provider Analysis",
                "Appointment Types", "Data Quality", "Appointment Data", "Capacity Data"]
+WORKBOOK_AUTHOR = "Healthcare Patient Flow Analytics"   # creator and lastModifiedBy
 
 # --- Look and feel: restrained blue palette, dark text --------------------------
 FONT_NAME = "Calibri"
@@ -653,7 +654,9 @@ def build_report(database_path=config.DATABASE_FILE,
 
     workbook.properties.title = "Healthcare Patient Flow & Operational Analytics Report"
     workbook.properties.subject = "Synthetic data only"
-    workbook.properties.creator = "healthcare-patient-flow-analytics"
+    # Neutral author fields: no personal names, email addresses or machine details.
+    workbook.properties.creator = WORKBOOK_AUTHOR
+    workbook.properties.lastModifiedBy = WORKBOOK_AUTHOR
     # Ask Excel to recalculate every formula when the workbook is opened.
     workbook.calculation = CalcProperties(calcMode="auto", fullCalcOnLoad=True)
     workbook.active = 0

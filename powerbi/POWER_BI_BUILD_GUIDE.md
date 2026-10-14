@@ -167,19 +167,19 @@ Departments. [POWER_BI_DATA_MODEL.md](POWER_BI_DATA_MODEL.md) explains why.
 
 The theme sets:
 - Segoe UI text, with dark navy titles;
-- white visuals on a light grey page;
+- white visuals on a light gray page;
 - no borders or shadows;
-- medium blue as the first data colour.
+- medium blue as the first data color.
 
-The status colours are set per visual in Step 9:
+The status colors are set per visual in Step 9:
 
-| Status | Colour | Hex |
+| Status | Color | Hex |
 |---|---|---|
 | Completed | Teal | `#1A8A7D` |
 | Cancelled | Orange | `#D97B29` |
 | No Show | Muted red | `#B4474F` |
 
-Colour is never the only signal: every status chart also shows the status name on its
+Color is never the only signal: every status chart also shows the status name on its
 axis or legend, and data labels.
 
 ## Step 8: Create the measures
@@ -228,14 +228,14 @@ Page setup for every page:
 How to apply the formatting called for below:
 - **Visual titles:** turn on the title under *Format visual > General > Title* and type
   the suggested title.
-- **Status colours:** on any visual that uses `appointment_status`, set the colours
+- **Status colors:** on any visual that uses `appointment_status`, set the colors
   under *Format visual > Visual > Bars / Columns > Colors* (Completed teal, Cancelled
   orange, No Show muted red).
 - **Sort orders:** set each sort from the visual's **More options (…) > Sort axis**.
 
 > **As built.** The tables below describe the approved dashboard: its pages, cards,
 > slicers and charts. In the saved report, a few presentation details differ from the
-> formatting suggestions here, such as automatic visual titles, colours and data labels.
+> formatting suggestions here, such as automatic visual titles, colors and data labels.
 > The project owner accepted them as final. They are listed under "Accepted design
 > choices" in
 > [POWER_BI_VERIFICATION_CHECKLIST.md](POWER_BI_VERIFICATION_CHECKLIST.md).
@@ -266,8 +266,8 @@ Wireframe (16:9, six equal columns):
 | 8 | Card | Average Wait Minutes | n/a | n/a | Average Wait (minutes) | `0.0` |
 | 9 | Card | Booking Rate | n/a | n/a | Booking Rate | `0.0%` |
 | 10 | Line chart | Y: Total Appointments | X: `Date[year_month]` | `year_month`, ascending | Monthly Appointment Volume | Markers on; data labels on; Y axis starts at 0 |
-| 11 | Clustered column chart | Y: Total Appointments | X: `Appointments[appointment_status]` | Total Appointments, descending | Appointments by Status | Data labels on; status colours |
-| 12 | Clustered bar chart | X: Total Appointments | Y: `Departments[department_name]` | Total Appointments, descending | Appointments by Department | Data labels on; one colour (medium blue) |
+| 11 | Clustered column chart | Y: Total Appointments | X: `Appointments[appointment_status]` | Total Appointments, descending | Appointments by Status | Data labels on; status colors |
+| 12 | Clustered bar chart | X: Total Appointments | Y: `Departments[department_name]` | Total Appointments, descending | Appointments by Department | Data labels on; one color (medium blue) |
 | 13 | Matrix | Values: Total Appointments, Completion Rate, No Show Rate, Average Wait Minutes, Booking Rate, Completed Slot Utilization | Rows: `Departments[department_name]` | Any (as built: No Show Rate, descending) | Department KPIs | Row subtotals (Total) on; the Total row must match the cards. Capacity columns are valid here because Department defines capacity |
 
 ### Page 2: Capacity and Provider Performance
@@ -333,7 +333,7 @@ Wireframe:
 | 8 | Card | Completion Rate | n/a | n/a | Completion Rate | `0.0%` |
 | 9 | Card | No Show Rate | n/a | n/a | No Show Rate | `0.0%` |
 | 10 | Clustered bar chart | X: Total Appointments | Y: `Appointments[appointment_type]` | Total Appointments, descending | Appointments by Type | Data labels optional |
-| 11 | Stacked column chart | Y: Total Appointments | X: `Appointments[appointment_type]`; Legend: `Appointments[appointment_status]` | Total Appointments, descending | Appointment Status by Type | Legend on, so each status is named; status colours |
+| 11 | Stacked column chart | Y: Total Appointments | X: `Appointments[appointment_type]`; Legend: `Appointments[appointment_status]` | Total Appointments, descending | Appointment Status by Type | Legend on, so each status is named; status colors |
 | 12 | Clustered column chart | Y: Total Appointments | X: `Date[weekday_name]` | `weekday_name`, ascending (Monday first) | Appointments by Weekday | Weekend days have no appointments and are not shown |
 | 13 | Clustered bar chart | X: Total Appointments | Y: `Patients[age_group]` | `age_group`, ascending (0-17 first) | Appointments by Age Group | Data labels optional |
 | 14 | Pie chart | Values: Total Appointments | Legend: `Patients[insurance_type]` | Total Appointments, descending | Appointments by Insurance Type | Detail labels: value and percent of total |
@@ -352,7 +352,7 @@ Record each result in
 4. **Ordering.**
    - Monthly axes run January to December, not alphabetically.
    - The weekday axis runs Monday to Friday.
-5. **Blank and zero behaviour.** Pick a date range with no appointments, such as a
+5. **Blank and zero behavior.** Pick a date range with no appointments, such as a
    weekend day. Counts show blank (shown as "(Blank)" on cards, which is expected) and
    rates show blank, never an error.
 6. **Capacity only on Pages 1 and 2.** Page 3 has no capacity measure.

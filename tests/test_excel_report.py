@@ -93,6 +93,13 @@ def test_no_external_links_or_macros(workbook, workbook_path):
     assert not any("externalLink" in name or "vbaProject" in name for name in names)
 
 
+def test_workbook_author_metadata_is_neutral(workbook):
+    properties = workbook.properties
+    assert properties.creator == create_excel_report.WORKBOOK_AUTHOR
+    assert properties.lastModifiedBy == create_excel_report.WORKBOOK_AUTHOR
+    assert create_excel_report.WORKBOOK_AUTHOR == "Healthcare Patient Flow Analytics"
+
+
 def test_no_hidden_sheets(workbook):
     assert all(ws.sheet_state == "visible" for ws in workbook.worksheets)
 

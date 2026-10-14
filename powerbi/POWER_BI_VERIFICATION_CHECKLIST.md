@@ -14,7 +14,7 @@
   **[S]**)
 - **Power BI Desktop version:** not recorded
 - **Approval:** the project owner approved the saved `.pbix` and the three screenshots as
-  the **final dashboard**. The visual titles, sizing, layout, colours and formatting are
+  the **final dashboard**. The visual titles, sizing, layout, colors and formatting are
   accepted as built. No further manual Power BI changes are planned.
 
 ### How to read this checklist
@@ -127,7 +127,7 @@ Expected values are the `display` values in `powerbi/expected_kpis.json` (seed 4
 - n/a Testing the remaining slicers one by one, the interaction settings and slicer
       syncing was not recorded.
 
-## 8. Blank and zero behaviour
+## 8. Blank and zero behavior
 
 - [x] **[F]** Every DAX division uses DIVIDE, so a zero or blank denominator returns a
       blank instead of an error. The SQL views, which the DAX matches, are tested with
@@ -160,10 +160,10 @@ Expected values are the `display` values in `powerbi/expected_kpis.json` (seed 4
 - [x] **[A]** The visual titles are Power BI's automatic titles, such as "Total
       Appointments by department_name". Slicer headers show column names. The titles are
       factual and make no claims.
-- [x] **[A]** Colours:
+- [x] **[A]** Colors:
   - the Page 1 status chart uses one blue;
   - Page 3 shows Cancelled blue, Completed teal and No Show orange;
-  - the Page 3 legend names every status, so meaning does not depend on colour alone.
+  - the Page 3 legend names every status, so meaning does not depend on color alone.
 - [x] **[S]** The look is consistent with the imported theme (white visuals, no borders or
       shadows). The theme import itself is **[U]**.
 - Non-blocking capture artifacts **[S]**. They look like a mouse cursor, text cursor or
@@ -219,7 +219,7 @@ build plan are accepted as final. None of them changes a KPI value.
 7. **Formatting:**
    - automatic visual titles and column-name slicer headers;
    - count cards without thousands separators;
-   - status colours as built;
+   - status colors as built;
    - most bar and column charts without data labels.
 8. **No on-canvas page titles or synthetic-data notice.** The repository documents state
    that the data is synthetic.
