@@ -233,6 +233,13 @@ How to apply the formatting called for below:
   orange, No Show muted red).
 - **Sort orders:** set each sort from the visual's **More options (…) > Sort axis**.
 
+> **As built.** The tables below describe the approved dashboard: its pages, cards,
+> slicers and charts. In the saved report, a few presentation details differ from the
+> formatting suggestions here, such as automatic visual titles, colours and data labels.
+> The project owner accepted them as final. They are listed under "Accepted design
+> choices" in
+> [POWER_BI_VERIFICATION_CHECKLIST.md](POWER_BI_VERIFICATION_CHECKLIST.md).
+
 ### Page 1: Operational Overview
 
 Wireframe (16:9, six equal columns):
@@ -241,7 +248,7 @@ Wireframe (16:9, six equal columns):
 |---|---|---|---|---|---|
 | Page title | ← | Date slicer | ← | Department slicer | Provider slicer |
 | Card: Total Appointments | Card: Unique Patients | Card: Completion Rate | Card: No Show Rate | Card: Average Wait Minutes | Card: Booking Rate |
-| Line: Monthly Appointment Volume | ← | ← | ← | Bar: Appointments by Status | ← |
+| Line: Monthly Appointment Volume | ← | ← | ← | Column: Appointments by Status | ← |
 | Bar: Appointments by Department | ← | Matrix: Department KPIs | ← | ← | ← |
 | Synthetic-data notice | ← | ← | ← | ← | ← |
 
@@ -259,9 +266,9 @@ Wireframe (16:9, six equal columns):
 | 8 | Card | Average Wait Minutes | n/a | n/a | Average Wait (minutes) | `0.0` |
 | 9 | Card | Booking Rate | n/a | n/a | Booking Rate | `0.0%` |
 | 10 | Line chart | Y: Total Appointments | X: `Date[year_month]` | `year_month`, ascending | Monthly Appointment Volume | Markers on; data labels on; Y axis starts at 0 |
-| 11 | Clustered bar chart | X: Total Appointments | Y: `Appointments[appointment_status]` | Total Appointments, descending | Appointments by Status | Data labels on; status colours |
+| 11 | Clustered column chart | Y: Total Appointments | X: `Appointments[appointment_status]` | Total Appointments, descending | Appointments by Status | Data labels on; status colours |
 | 12 | Clustered bar chart | X: Total Appointments | Y: `Departments[department_name]` | Total Appointments, descending | Appointments by Department | Data labels on; one colour (medium blue) |
-| 13 | Matrix | Values: Total Appointments, Completion Rate, No Show Rate, Average Wait Minutes | Rows: `Departments[department_name]` | Total Appointments, descending | Department KPIs | Row subtotals (Total) on; the Total row must match the cards |
+| 13 | Matrix | Values: Total Appointments, Completion Rate, No Show Rate, Average Wait Minutes, Booking Rate, Completed Slot Utilization | Rows: `Departments[department_name]` | Any (as built: No Show Rate, descending) | Department KPIs | Row subtotals (Total) on; the Total row must match the cards. Capacity columns are valid here because Department defines capacity |
 
 ### Page 2: Capacity and Provider Performance
 
@@ -270,7 +277,7 @@ Wireframe:
 | Col 1 | Col 2 | Col 3 | Col 4 | Col 5 | Col 6 |
 |---|---|---|---|---|---|
 | Page title | ← | Date slicer | ← | Department slicer | Provider slicer |
-| Card: Available Slots | ← | Card: Booking Rate | Card: Completed Slot Utilization | ← | Card: Average Visit Minutes |
+| Card: Total Appointments | ← | Card: Available Slots | Card: Booking Rate | ← | Card: Completed Slot Utilization |
 | Bar: Booking Rate by Department | ← | ← | Bar: Booking Rate by Provider | ← | ← |
 | Combo: Monthly Appointments vs Available Slots | ← | ← | Matrix: Provider Capacity and Performance | ← | ← |
 | Synthetic-data notice | ← | ← | ← | ← | ← |
@@ -280,50 +287,56 @@ Wireframe:
 | 1 | Slicer | `Date[date]` | n/a | n/a | Date | Between |
 | 2 | Slicer | `Departments[department_name]` | n/a | A–Z | Department | Dropdown; filters the Provider slicer |
 | 3 | Slicer | `Providers[provider_name]` | n/a | A–Z | Provider | Dropdown |
-| 4 | Card | Available Slots | n/a | n/a | Available Slots | `#,0` |
-| 5 | Card | Booking Rate | n/a | n/a | Booking Rate | `0.0%` |
-| 6 | Card | Completed Slot Utilization | n/a | n/a | Completed Slot Utilization | `0.0%` |
-| 7 | Card | Average Visit Minutes | n/a | n/a | Average Visit (minutes) | `0.0` |
+| 4 | Card | Total Appointments | n/a | n/a | Total Appointments | `#,0` |
+| 5 | Card | Available Slots | n/a | n/a | Available Slots | `#,0` |
+| 6 | Card | Booking Rate | n/a | n/a | Booking Rate | `0.0%` |
+| 7 | Card | Completed Slot Utilization | n/a | n/a | Completed Slot Utilization | `0.0%` |
 | 8 | Clustered bar chart | X: Booking Rate | Y: `Departments[department_name]` | Booking Rate, descending | Booking Rate by Department | Data labels `0.0%`; X axis starts at 0; tooltips: add Total Appointments and Available Slots |
 | 9 | Clustered bar chart | X: Booking Rate | Y: `Providers[provider_name]` | Booking Rate, descending | Booking Rate by Provider | Data labels `0.0%`; X axis starts at 0; tooltips: Total Appointments, Available Slots |
-| 10 | Line and clustered column chart | Column Y: Total Appointments; Line Y: Available Slots | X: `Date[year_month]` | `year_month`, ascending | Monthly Appointments vs Available Slots | Legend on (top); turn **off** the secondary Y axis so both share one scale; data labels optional |
-| 11 | Matrix | Values: Total Appointments, Available Slots, Booking Rate, Completed Slot Utilization, Average Wait Minutes | Rows: `Departments[department_name]`, then `Providers[provider_name]` | Department A–Z | Provider Capacity and Performance | Expand all rows (**… > Expand to next level**); subtotals on |
+| 10 | Line and clustered column chart | Column Y: Available Slots; Line Y: Total Appointments | X: `Date[year_month]` | `year_month`, ascending | Available Slots and Total Appointments | Legend on; turn **off** the secondary Y axis so both share one scale; data labels optional |
+| 11 | Matrix | Values: Total Appointments, Completion Rate, No Show Rate, Average Wait Minutes, Available Slots, Booking Rate, Completed Slot Utilization | Rows: `Providers[provider_name]` | Provider A–Z | Provider Capacity and Performance | Row subtotals (Total) on; the Total row must match the cards |
 
-The Booking Rate and Completed Slot Utilization cards must match `expected_kpis.json`
-(71.9% and 57.5% for seed 42) with no slicer selections.
+With no slicer selections, these cards must match `expected_kpis.json`. Seed-42 values:
+- Total Appointments: 5,000
+- Available Slots: 6,956
+- Booking Rate: 71.9%
+- Completed Slot Utilization: 57.5%
+
+The Average Visit Minutes measure is still in the DAX library, but it is not shown on
+this page.
 
 ### Page 3: Patient and Appointment Patterns
 
 **No capacity measures on this page.** Available Slots, Booking Rate and Completed Slot
-Utilization are not shown, because appointment-type, age-group and insurance filters do
-not define provider capacity (see the data model).
+Utilization are not shown. Appointment type, appointment status and patient fields such
+as age group and insurance type do not define provider capacity (see the data model).
 
 Wireframe:
 
 | Col 1 | Col 2 | Col 3 | Col 4 | Col 5 | Col 6 |
 |---|---|---|---|---|---|
-| Page title | Date slicer | Department slicer | Appointment Type slicer | Age Group slicer | Insurance Type slicer |
+| Page title | Date slicer | Department slicer | Provider slicer | Appointment Type slicer | Appointment Status slicer |
 | Card: Total Appointments | ← | Card: Unique Patients | Card: Completion Rate | ← | Card: No Show Rate |
-| Column: Appointments by Type | ← | Bar: Appointment Status by Type | ← | Column: Appointments by Weekday | ← |
-| Column: Appointments by Age Group | ← | ← | Bar: Appointments by Insurance Type | ← | ← |
+| Bar: Appointments by Type | ← | Column: Appointment Status by Type | ← | Column: Appointments by Weekday | ← |
+| Bar: Appointments by Age Group | ← | ← | Pie: Appointments by Insurance Type | ← | ← |
 | Synthetic-data notice | ← | ← | ← | ← | ← |
 
 | # | Visual type | Fields / measures | Axis / legend | Sort | Title | Formatting and interaction |
 |---|---|---|---|---|---|---|
 | 1 | Slicer | `Date[date]` | n/a | n/a | Date | Between |
 | 2 | Slicer | `Departments[department_name]` | n/a | A–Z | Department | Dropdown |
-| 3 | Slicer | `Appointments[appointment_type]` | n/a | A–Z | Appointment Type | Dropdown |
-| 4 | Slicer | `Patients[age_group]` | n/a | A–Z (0-17 first) | Age Group | Dropdown |
-| 5 | Slicer | `Patients[insurance_type]` | n/a | A–Z | Insurance Type | Dropdown |
+| 3 | Slicer | `Providers[provider_name]` | n/a | A–Z | Provider | Dropdown; filtered by the Department slicer |
+| 4 | Slicer | `Appointments[appointment_type]` | n/a | A–Z | Appointment Type | Dropdown |
+| 5 | Slicer | `Appointments[appointment_status]` | n/a | A–Z | Appointment Status | Dropdown. Selecting one status makes Completion Rate and No Show Rate 0% or 100%, which is expected |
 | 6 | Card | Total Appointments | n/a | n/a | Total Appointments | `#,0` |
 | 7 | Card | Unique Patients | n/a | n/a | Unique Patients | `#,0` |
 | 8 | Card | Completion Rate | n/a | n/a | Completion Rate | `0.0%` |
 | 9 | Card | No Show Rate | n/a | n/a | No Show Rate | `0.0%` |
-| 10 | Clustered column chart | Y: Total Appointments | X: `Appointments[appointment_type]` | Total Appointments, descending | Appointments by Type | Data labels on |
-| 11 | 100% stacked bar chart | X: Total Appointments | Y: `Appointments[appointment_type]`; Legend: `Appointments[appointment_status]` | Total Appointments, descending | Appointment Status by Type | Status colours; data labels on (percent of row); legend at top |
-| 12 | Clustered column chart | Y: Total Appointments | X: `Date[weekday_name]` | `weekday_name`, ascending (Monday first) | Appointments by Weekday | Data labels on. Weekend days have no appointments and are not shown |
-| 13 | Clustered column chart | Y: Total Appointments | X: `Patients[age_group]` | `age_group`, ascending | Appointments by Age Group | Data labels on |
-| 14 | Clustered bar chart | X: Total Appointments | Y: `Patients[insurance_type]` | Total Appointments, descending | Appointments by Insurance Type | Data labels on |
+| 10 | Clustered bar chart | X: Total Appointments | Y: `Appointments[appointment_type]` | Total Appointments, descending | Appointments by Type | Data labels optional |
+| 11 | Stacked column chart | Y: Total Appointments | X: `Appointments[appointment_type]`; Legend: `Appointments[appointment_status]` | Total Appointments, descending | Appointment Status by Type | Legend on, so each status is named; status colours |
+| 12 | Clustered column chart | Y: Total Appointments | X: `Date[weekday_name]` | `weekday_name`, ascending (Monday first) | Appointments by Weekday | Weekend days have no appointments and are not shown |
+| 13 | Clustered bar chart | X: Total Appointments | Y: `Patients[age_group]` | `age_group`, ascending (0-17 first) | Appointments by Age Group | Data labels optional |
+| 14 | Pie chart | Values: Total Appointments | Legend: `Patients[insurance_type]` | Total Appointments, descending | Appointments by Insurance Type | Detail labels: value and percent of total |
 
 ## Step 10: Test the report
 
@@ -352,10 +365,12 @@ Record each result in
    - capture with **Windows key + Shift + S** (Snipping Tool) or **File > Export > Export
      to PDF**.
 3. Save the images to `screenshots/`:
-   - `screenshots/page1_operational_overview.png`
-   - `screenshots/page2_capacity_provider_performance.png`
-   - `screenshots/page3_patient_appointment_patterns.png`
+   - `screenshots/powerbi_operational_overview.png`
+   - `screenshots/powerbi_capacity_provider_performance.png`
+   - `screenshots/powerbi_patient_appointment_patterns.png`
 4. Complete the verification checklist.
 
 Only report the dashboard as complete once the `.pbix` file and the three screenshots
-exist and the checklist is complete.
+exist and the checklist is complete. In this project, all three conditions are met: see
+the verification record in
+[POWER_BI_VERIFICATION_CHECKLIST.md](POWER_BI_VERIFICATION_CHECKLIST.md).

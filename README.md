@@ -15,12 +15,11 @@ utilization, appointment status (completed, cancelled, no-show), and trends over
 synthetic data  ->  Python/Pandas cleaning  ->  SQL analysis  ->  Excel outputs  ->  Power BI dashboard
 ```
 
-Tools: Python, Pandas, SQL (SQLite), Excel and Power BI. Everything up to the Excel report
-exists, and the Power BI data package and build guide are ready. The Power BI dashboard
-(`.pbix`) is not built yet: it has to be built and checked by hand in Power BI Desktop
-(see [Roadmap](#roadmap)).
+Tools: Python, Pandas, SQL (SQLite), Excel and Power BI. Every step in this workflow
+exists, ending with a Power BI dashboard that was built by hand in Power BI Desktop (see
+[Roadmap](#roadmap)).
 
-## Current status: Phases 1–3 done, Phase 4 in progress
+## Current status: Phases 1–4 complete
 
 **Phase 1: synthetic data**
 - A deterministic synthetic data generator: the same seed always gives the same files.
@@ -38,14 +37,19 @@ exists, and the Power BI data package and build guide are ready. The Power BI da
 - `create_excel_report.py` writes the Excel workbook
   `reports/healthcare_patient_flow_report.xlsx`.
 
-**Phase 4A: Power BI preparation (dashboard not built yet)**
-- `prepare_powerbi_data.py` exports a validated Power BI snapshot to `powerbi/data/`
-  and reference KPI values to `powerbi/expected_kpis.json`.
-- `powerbi/` contains the star-schema specification, data dictionary, DAX measures,
-  theme, build guide and verification checklist for building the dashboard by hand.
+**Phase 4: Power BI dashboard**
+- **4A:** `prepare_powerbi_data.py` exports a validated Power BI snapshot to
+  `powerbi/data/` and reference KPI values to `powerbi/expected_kpis.json`. `powerbi/`
+  also holds the star-schema specification, data dictionary, DAX measures, theme, build
+  guide and verification checklist.
+- **4B:** the dashboard `powerbi/healthcare_patient_flow_dashboard.pbix` was built by
+  hand in Power BI Desktop. It has three pages, each with a screenshot in `screenshots/`.
+  Its headline KPIs match `expected_kpis.json`.
 
-The automated tests (pytest) cover Phases 1–3 and the Phase 4A files. They cannot test the
-Power BI report itself.
+The automated tests (pytest) cover Phases 1–3, the Phase 4A files, and the presence and
+validity of the `.pbix` and screenshot files. They cannot open or calculate the Power BI
+report itself; those checks were done by hand (see
+[Dashboard verification](#dashboard-verification)).
 
 ### Raw tables (Phase 1)
 
@@ -278,13 +282,93 @@ The workbook is a portfolio deliverable and is tracked by Git, unlike the files 
 `data/`. If `create_excel_report.py` says it cannot write the file, close the workbook in
 Excel and run it again.
 
-## Phase 4A: Power BI preparation
+## Phase 4: Power BI dashboard
 
-The dashboard is built by hand in Power BI Desktop. Python **cannot** create, edit or check
-a `.pbix` file. This phase prepares everything needed for the manual build, and the
-dashboard does not exist yet. Phase 4 stays *In Progress* until
-`powerbi/healthcare_patient_flow_dashboard.pbix` and the page screenshots exist and the
-verification checklist has been completed.
+### Dashboard (`powerbi/healthcare_patient_flow_dashboard.pbix`)
+
+The dashboard was built by hand in Power BI Desktop from the Phase 4A files. Python does not
+create or edit the `.pbix` file. Open it in Power BI Desktop (Windows) to explore it. The
+screenshots below show each page with no slicer selections.
+
+**Page 1: Operational Overview**
+(`screenshots/powerbi_operational_overview.png`)
+- **Cards:** Total Appointments, Average Wait Minutes, Booking Rate, Unique Patients,
+  Completion Rate, No Show Rate.
+- **Slicers:** Provider, Department, Date range.
+- **Charts and matrix:**
+  - appointments by status (column chart);
+  - department KPI matrix: appointments, completion rate, No Show rate, average wait,
+    booking rate and completed slot utilization, with a Total row;
+  - appointments by department (bar chart);
+  - monthly appointment volume (line chart, Jan–Dec 2025).
+
+![Operational Overview](screenshots/powerbi_operational_overview.png)
+
+**Page 2: Capacity and Provider Performance**
+(`screenshots/powerbi_capacity_provider_performance.png`)
+- **Cards:** Total Appointments, Available Slots, Booking Rate, Completed Slot
+  Utilization.
+- **Slicers:** Provider, Department, Date range.
+- **Charts and matrix:**
+  - booking rate by provider and by department (bar charts);
+  - monthly Available Slots (columns) and Total Appointments (line) on one axis;
+  - provider matrix: appointments, completion rate, No Show rate, average wait, available
+    slots, booking rate and completed slot utilization, with a Total row.
+
+![Capacity and Provider Performance](screenshots/powerbi_capacity_provider_performance.png)
+
+**Page 3: Patient and Appointment Patterns**
+(`screenshots/powerbi_patient_appointment_patterns.png`)
+- **Cards:** Total Appointments, Completion Rate, Unique Patients, No Show Rate.
+- **Slicers:** Date range, Department, Provider, Appointment Type, Appointment Status.
+- **Charts:**
+  - appointments by type;
+  - status by appointment type (stacked columns);
+  - appointments by weekday (Monday–Friday);
+  - appointments by age group;
+  - appointments by insurance type (pie).
+- **No capacity measures** on this page: appointment type, status and patient fields do
+  not define provider capacity.
+
+![Patient and Appointment Patterns](screenshots/powerbi_patient_appointment_patterns.png)
+
+### Dashboard verification
+
+[POWER_BI_VERIFICATION_CHECKLIST.md](powerbi/POWER_BI_VERIFICATION_CHECKLIST.md) records
+how each check was done:
+- **Automated file tests:** the snapshot, DAX file, theme and documents, and that the
+  `.pbix` and PNG files exist, are valid and are tracked by Git.
+- **Screenshot review:** the values visible on each page were recomputed from
+  `powerbi/data/`.
+- **Checks in Power BI Desktop:** done by the project owner.
+
+Screenshots cannot prove hidden model settings such as relationships or data types. Those
+were confirmed in Power BI Desktop.
+
+| Check (seed 42, no slicers) | Expected | Dashboard |
+|---|---|---|
+| Total Appointments | 5,000 | 5000 |
+| Unique Patients | 1,229 | 1229 |
+| Completion Rate | 80.0% | 80.0% |
+| No Show Rate | 8.5% | 8.5% |
+| Average Wait Minutes | 29.7 | 29.7 |
+| Available Slots | 6,956 | 6956 |
+| Booking Rate | 71.9% | 71.9% |
+| Completed Slot Utilization | 57.5% | 57.5% |
+
+Slicer checks in Power BI Desktop:
+- Department = Cardiology gave 705 appointments and limited the Provider choices.
+- Appointment Status = No Show gave 427 appointments and a 100.0% No Show Rate.
+
+The approved dashboard differs from some formatting suggestions in the build guide. For
+example, it uses automatic visual titles, count cards without thousands separators, and
+no on-canvas synthetic-data notice. These were accepted as final, and the checklist lists
+them under "Accepted design choices".
+
+### Phase 4A: Power BI preparation
+
+Python **cannot** create, edit or check a `.pbix` file. Phase 4A prepared everything
+needed for the manual build.
 
 `prepare_powerbi_data.py` runs these steps:
 1. Runs the Phase 3 SQL analytics and reconciliation.
@@ -309,8 +393,10 @@ The output is identical on every run.
 | `powerbi/DATA_DICTIONARY.md` | Every column: type, meaning, key, blanks, notes |
 | `powerbi/dax_measures.txt` | 16 copy-ready DAX measures with the Phase 3 definitions and formats |
 | `powerbi/healthcare_theme.json` | Power BI theme: navy titles, blue charts, teal / orange / muted red for status |
-| `powerbi/POWER_BI_BUILD_GUIDE.md` | Step-by-step build of the three report pages |
-| `powerbi/POWER_BI_VERIFICATION_CHECKLIST.md` | Manual checks, including KPI reconciliation and slicer tests |
+| `powerbi/POWER_BI_BUILD_GUIDE.md` | Step-by-step build of the three report pages (as built) |
+| `powerbi/POWER_BI_VERIFICATION_CHECKLIST.md` | Verification record: file tests, screenshot checks, Power BI Desktop checks, accepted design choices |
+| `powerbi/healthcare_patient_flow_dashboard.pbix` | The Power BI dashboard (Phase 4B, built by hand) |
+| `screenshots/powerbi_*.png` | One screenshot per dashboard page (Phase 4B) |
 
 File formats:
 - CSV files are UTF-8.
@@ -360,8 +446,10 @@ python -m pytest -q
 Invoke-Item .\reports\healthcare_patient_flow_report.xlsx
 ```
 
-To build the dashboard, follow `powerbi\POWER_BI_BUILD_GUIDE.md` in Power BI Desktop. This
-is a manual step; there is no command for it.
+To view the dashboard, open `powerbi\healthcare_patient_flow_dashboard.pbix` in Power BI
+Desktop. Rebuilding it is a manual step with no command; `powerbi\POWER_BI_BUILD_GUIDE.md`
+describes it. If you regenerate the data with other settings, refresh the report in
+Power BI Desktop and compare it with the new `expected_kpis.json`.
 
 If PowerShell blocks `Activate.ps1`, run
 `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` once, or skip
@@ -386,7 +474,8 @@ Everything under `data\` (CSV files, the database, the JSON report and the analy
 exports) is not tracked by Git. Re-create it at any time with steps 3 to 5. These are
 tracked:
 - the Excel workbook in `reports\`;
-- the Power BI snapshot and documents in `powerbi\`.
+- the Power BI snapshot, documents and `.pbix` dashboard in `powerbi\`;
+- the dashboard screenshots in `screenshots\`.
 
 ## Folder structure
 
@@ -410,17 +499,20 @@ healthcare-patient-flow-analytics/
 │   ├── DATA_DICTIONARY.md       # every Power BI column
 │   ├── dax_measures.txt         # DAX measure library
 │   ├── healthcare_theme.json    # Power BI theme
-│   ├── POWER_BI_BUILD_GUIDE.md  # manual build steps and page designs
-│   └── POWER_BI_VERIFICATION_CHECKLIST.md
-│       # (to be created by hand: healthcare_patient_flow_dashboard.pbix)
-├── screenshots/        # (to be added by hand) dashboard page screenshots
+│   ├── POWER_BI_BUILD_GUIDE.md  # manual build steps and page designs (as built)
+│   ├── POWER_BI_VERIFICATION_CHECKLIST.md   # Phase 4B verification record
+│   └── healthcare_patient_flow_dashboard.pbix  # Phase 4B dashboard (built by hand)
+├── screenshots/
+│   ├── powerbi_operational_overview.png
+│   ├── powerbi_capacity_provider_performance.png
+│   └── powerbi_patient_appointment_patterns.png
 ├── tests/
 │   ├── conftest.py
 │   ├── test_generate_data.py   # Phase 1 tests
 │   ├── test_prepare_data.py    # Phase 2 tests
 │   ├── test_analytics.py       # Phase 3 SQL and analytics tests
 │   ├── test_excel_report.py    # Phase 3 workbook tests
-│   └── test_powerbi_assets.py  # Phase 4A Power BI package tests
+│   └── test_powerbi_assets.py  # Phase 4 Power BI package and artifact tests
 ├── .gitignore
 ├── README.md
 ├── config.py               # all settings (generator, file paths)
@@ -439,9 +531,7 @@ healthcare-patient-flow-analytics/
 | 1 | Project structure, synthetic data generator, tests | Done |
 | 2 | Validation, cleaning, derived fields, SQLite database, data-quality report, tests | Done |
 | 3 | SQL KPI views, reconciliation, analysis CSV exports, Excel report, tests | Done |
-| 4 | Power BI dashboard: **4A** data package, model, DAX, theme and guides (prepared); **4B** `.pbix` built and verified by hand in Power BI Desktop, plus screenshots (not started) | In Progress |
+| 4 | Power BI dashboard: **4A** data package, model, DAX, theme and guides; **4B** three-page `.pbix` built and checked by hand in Power BI Desktop, screenshots, verification record | Done |
 | 5 | Final presentation: final documentation | Planned |
 
-Phase 4 stays *In Progress* until the `.pbix` file and screenshots exist and the
-verification checklist is complete. Planned work is not built yet, and its details may
-change.
+Planned work is not built yet, and its details may change.

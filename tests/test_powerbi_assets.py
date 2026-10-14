@@ -63,6 +63,13 @@ DAX_MEASURES = [*KPI_COLUMNS, "Previous Month Appointments", "Month over Month C
                 "Month over Month Change Percent"]
 DATE = r"\d{4}-\d{2}-\d{2}"
 DATETIME = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
+# Phase 4B artifacts, created by hand in Power BI Desktop.
+PBIX = POWERBI / "healthcare_patient_flow_dashboard.pbix"
+SCREENSHOTS = ["powerbi_operational_overview.png",
+               "powerbi_capacity_provider_performance.png",
+               "powerbi_patient_appointment_patterns.png"]
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+PNG_END = b"IEND\xaeB`\x82"     # the IEND chunk type and its fixed checksum
 
 
 # --- Fixtures and helpers -------------------------------------------------------------
@@ -239,7 +246,7 @@ def test_powerbi_assets_are_not_ignored_by_git():
     requires_git()
     for path in [*(f"powerbi/data/{name}" for name in EXPECTED_COLUMNS),
                  "powerbi/expected_kpis.json", "powerbi/healthcare_patient_flow_dashboard.pbix",
-                 "screenshots/page1_operational_overview.png"]:
+                 *(f"screenshots/{name}" for name in SCREENSHOTS)]:
         assert not git_is_ignored(path), path
 
 
@@ -265,6 +272,44 @@ def test_missing_database_gives_helpful_error(tmp_path):
     with pytest.raises(FileNotFoundError, match="prepare_data.py"):
         prepare_powerbi_data.build_package(tmp_path / "missing.db", tmp_path / "out",
                                            tmp_path / "kpis.json")
+
+
+# --- Phase 4B artifacts (built by hand) ----------------------------------------------------
+# These check only that the files exist, are well-formed and are trackable. The .pbix
+# format is proprietary, so its contents are not opened. Rendering and DAX results were
+# checked by hand (powerbi/POWER_BI_VERIFICATION_CHECKLIST.md).
+
+def project_files(pattern):
+    """Files matching a pattern anywhere in the project, skipping .git and .venv."""
+    return [path for path in PROJECT_ROOT.rglob(pattern)
+            if not {".git", ".venv"} & set(path.relative_to(PROJECT_ROOT).parts)]
+
+
+def test_pbix_exists_and_is_not_empty():
+    assert PBIX.is_file(), f"missing {PBIX}"
+    assert PBIX.stat().st_size > 0
+
+
+def test_exactly_one_pbix_and_none_in_the_data_folder():
+    assert project_files("*.pbix") == [PBIX]
+    assert not list((POWERBI / "data").glob("*.pbix"))
+
+
+@pytest.mark.parametrize("name", SCREENSHOTS)
+def test_screenshot_is_a_valid_16_by_9_png(name):
+    content = (PROJECT_ROOT / "screenshots" / name).read_bytes()
+    assert content.startswith(PNG_SIGNATURE), name
+    assert content[12:16] == b"IHDR", name                 # first chunk: image header
+    width = int.from_bytes(content[16:20], "big")
+    height = int.from_bytes(content[20:24], "big")
+    assert width >= 1000 and height >= 560, (name, width, height)
+    assert 1.70 <= width / height <= 1.85, (name, width, height)   # about 16:9
+    assert content.endswith(PNG_END), name                 # complete file
+
+
+def test_only_the_expected_screenshots_exist():
+    assert sorted(path.name for path in (PROJECT_ROOT / "screenshots").glob("*.png")) == sorted(
+        SCREENSHOTS)
 
 
 # --- Reference KPIs -------------------------------------------------------------------------
