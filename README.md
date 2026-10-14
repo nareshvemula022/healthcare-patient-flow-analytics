@@ -432,12 +432,3 @@ notice. Average Visit Minutes and Cancellation Rate are in the model but not on 
 These are listed in the
 [verification checklist](powerbi/POWER_BI_VERIFICATION_CHECKLIST.md#accepted-design-choices).
 
-## Project status
-
-All five phases are complete. The finished deliverables are:
-- the synthetic data generator, validation pipeline and SQLite database;
-- the data-quality report and the SQL KPI views with reconciliation checks;
-- the Excel report;
-- the Power BI data package, model documentation, DAX measures and theme;
-- the three-page Power BI dashboard, its screenshots and verification record;
-- the automated test suite and this documentation.
