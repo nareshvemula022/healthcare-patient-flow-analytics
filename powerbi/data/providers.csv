@@ -1,0 +1,13 @@
+provider_id,department_id,provider_name,specialty,daily_slot_capacity
+PRV001,DEP01,Dr. Reese Jansen,Family Physician,10
+PRV002,DEP01,Dr. Morgan Ashford,Nurse Practitioner,14
+PRV003,DEP02,Dr. Avery Galloway,Pediatrician,13
+PRV004,DEP02,Dr. Logan Hollis,Pediatrician,10
+PRV005,DEP03,Dr. Taylor Ashford,Cardiologist,10
+PRV006,DEP03,Dr. Casey Galloway,Cardiologist,10
+PRV007,DEP04,Dr. Casey Bellamy,Orthopedic Surgeon,11
+PRV008,DEP04,Dr. Morgan Hollis,Sports Medicine Physician,11
+PRV009,DEP05,Dr. Logan Galloway,Dermatologist,14
+PRV010,DEP05,Dr. Jordan Merritt,Dermatologist,14
+PRV011,DEP06,Dr. Parker Fairbanks,Neurologist,10
+PRV012,DEP06,Dr. Emerson Northcott,Neurologist,14

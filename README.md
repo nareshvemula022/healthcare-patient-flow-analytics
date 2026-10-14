@@ -16,9 +16,11 @@ synthetic data  ->  Python/Pandas cleaning  ->  SQL analysis  ->  Excel outputs 
 ```
 
 Tools: Python, Pandas, SQL (SQLite), Excel and Power BI. Everything up to the Excel report
-exists so far. The Power BI dashboard is not built yet (see [Roadmap](#roadmap)).
+exists, and the Power BI data package and build guide are ready. The Power BI dashboard
+(`.pbix`) is not built yet: it has to be built and checked by hand in Power BI Desktop
+(see [Roadmap](#roadmap)).
 
-## Current status: Phases 1, 2 and 3
+## Current status: Phases 1–3 done, Phase 4 in progress
 
 **Phase 1: synthetic data**
 - A deterministic synthetic data generator: the same seed always gives the same files.
@@ -36,7 +38,14 @@ exists so far. The Power BI dashboard is not built yet (see [Roadmap](#roadmap))
 - `create_excel_report.py` writes the Excel workbook
   `reports/healthcare_patient_flow_report.xlsx`.
 
-All three phases are covered by automated tests (pytest).
+**Phase 4A: Power BI preparation (dashboard not built yet)**
+- `prepare_powerbi_data.py` exports a validated Power BI snapshot to `powerbi/data/`
+  and reference KPI values to `powerbi/expected_kpis.json`.
+- `powerbi/` contains the star-schema specification, data dictionary, DAX measures,
+  theme, build guide and verification checklist for building the dashboard by hand.
+
+The automated tests (pytest) cover Phases 1–3 and the Phase 4A files. They cannot test the
+Power BI report itself.
 
 ### Raw tables (Phase 1)
 
@@ -269,6 +278,53 @@ The workbook is a portfolio deliverable and is tracked by Git, unlike the files 
 `data/`. If `create_excel_report.py` says it cannot write the file, close the workbook in
 Excel and run it again.
 
+## Phase 4A: Power BI preparation
+
+The dashboard is built by hand in Power BI Desktop. Python **cannot** create, edit or check
+a `.pbix` file. This phase prepares everything needed for the manual build, and the
+dashboard does not exist yet. Phase 4 stays *In Progress* until
+`powerbi/healthcare_patient_flow_dashboard.pbix` and the page screenshots exist and the
+verification checklist has been completed.
+
+`prepare_powerbi_data.py` runs these steps:
+1. Runs the Phase 3 SQL analytics and reconciliation.
+2. Reads the five SQLite tables and builds a calendar Date table.
+3. Checks primary keys, foreign keys and provider/department consistency. If anything
+   fails, it writes nothing.
+4. Writes the six CSV files and `expected_kpis.json`.
+5. Reads the files back to confirm that row counts and headline KPIs match SQLite.
+
+The output is identical on every run.
+
+| Asset | Purpose |
+|---|---|
+| `powerbi/data/appointments.csv` | Fact: one row per appointment |
+| `powerbi/data/provider_schedules.csv` | Fact: one row per provider clinic day (capacity) |
+| `powerbi/data/providers.csv` | Dimension: providers |
+| `powerbi/data/departments.csv` | Dimension: departments |
+| `powerbi/data/patients.csv` | Dimension: patients |
+| `powerbi/data/date.csv` | Dimension: every calendar day of each year in the data (Monday = 1) |
+| `powerbi/expected_kpis.json` | Reference KPI values from the SQL view `vw_overall_kpis`, for checking the dashboard |
+| `powerbi/POWER_BI_DATA_MODEL.md` | Star schema, six one-to-many single-direction relationships, date table and sort settings |
+| `powerbi/DATA_DICTIONARY.md` | Every column: type, meaning, key, blanks, notes |
+| `powerbi/dax_measures.txt` | 16 copy-ready DAX measures with the Phase 3 definitions and formats |
+| `powerbi/healthcare_theme.json` | Power BI theme: navy titles, blue charts, teal / orange / muted red for status |
+| `powerbi/POWER_BI_BUILD_GUIDE.md` | Step-by-step build of the three report pages |
+| `powerbi/POWER_BI_VERIFICATION_CHECKLIST.md` | Manual checks, including KPI reconciliation and slicer tests |
+
+File formats:
+- CSV files are UTF-8.
+- IDs are text.
+- Dates are `YYYY-MM-DD` and datetimes are `YYYY-MM-DD HH:MM:SS`.
+- Visit times and durations are blank for Cancelled and No Show appointments.
+
+The snapshot files are tracked by Git so the dashboard can be rebuilt without running
+Python. Re-run `prepare_powerbi_data.py` after regenerating the data.
+
+The capacity measures (Available Slots, Booking Rate, Completed Slot Utilization) are
+meaningful only with Date, Department and Provider filters. They must not be split by
+appointment type or patient attributes, so they don't appear on the patient-patterns page.
+
 ## Setup and run (Windows PowerShell)
 
 Tested with Python 3.12 (pandas 3 needs Python 3.11 or newer). Run these from the project
@@ -294,12 +350,18 @@ python analyze_data.py
 # 6. Create the Excel report (reports\healthcare_patient_flow_report.xlsx)
 python create_excel_report.py
 
-# 7. Run the tests
+# 7. Export the Power BI snapshot (powerbi\data and powerbi\expected_kpis.json)
+python prepare_powerbi_data.py
+
+# 8. Run the tests
 python -m pytest -q
 
-# 8. Open the workbook in Excel
+# 9. Open the workbook in Excel
 Invoke-Item .\reports\healthcare_patient_flow_report.xlsx
 ```
+
+To build the dashboard, follow `powerbi\POWER_BI_BUILD_GUIDE.md` in Power BI Desktop. This
+is a manual step; there is no command for it.
 
 If PowerShell blocks `Activate.ps1`, run
 `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` once, or skip
@@ -317,11 +379,14 @@ Generator options:
 `prepare_data.py` options: `--raw-dir`, `--processed-dir` and `--output-dir`. The defaults
 are `data\raw`, `data\processed` and `data\output`. `analyze_data.py` accepts
 `--database` and `--output-dir`; `create_excel_report.py` accepts `--database`,
-`--quality-report` and `--output`.
+`--quality-report` and `--output`; `prepare_powerbi_data.py` accepts `--database`,
+`--output-dir` and `--expected-kpis`.
 
 Everything under `data\` (CSV files, the database, the JSON report and the analysis
-exports) is not tracked by Git. Re-create it at any time with steps 3 to 5. The Excel
-workbook in `reports\` is tracked.
+exports) is not tracked by Git. Re-create it at any time with steps 3 to 5. These are
+tracked:
+- the Excel workbook in `reports\`;
+- the Power BI snapshot and documents in `powerbi\`.
 
 ## Folder structure
 
@@ -338,14 +403,24 @@ healthcare-patient-flow-analytics/
 ├── sql/
 │   ├── 01_create_schema.sql            # SQLite tables, keys, checks, indexes
 │   └── 02_create_analytics_views.sql   # KPI views
-├── powerbi/            # (later phase) Power BI report file
-├── screenshots/        # (later phase) dashboard screenshots
+├── powerbi/
+│   ├── data/                    # Phase 4A Power BI snapshot: six CSV files (tracked)
+│   ├── expected_kpis.json       # reference KPI values from SQL
+│   ├── POWER_BI_DATA_MODEL.md   # star schema and relationships
+│   ├── DATA_DICTIONARY.md       # every Power BI column
+│   ├── dax_measures.txt         # DAX measure library
+│   ├── healthcare_theme.json    # Power BI theme
+│   ├── POWER_BI_BUILD_GUIDE.md  # manual build steps and page designs
+│   └── POWER_BI_VERIFICATION_CHECKLIST.md
+│       # (to be created by hand: healthcare_patient_flow_dashboard.pbix)
+├── screenshots/        # (to be added by hand) dashboard page screenshots
 ├── tests/
 │   ├── conftest.py
 │   ├── test_generate_data.py   # Phase 1 tests
 │   ├── test_prepare_data.py    # Phase 2 tests
 │   ├── test_analytics.py       # Phase 3 SQL and analytics tests
-│   └── test_excel_report.py    # Phase 3 workbook tests
+│   ├── test_excel_report.py    # Phase 3 workbook tests
+│   └── test_powerbi_assets.py  # Phase 4A Power BI package tests
 ├── .gitignore
 ├── README.md
 ├── config.py               # all settings (generator, file paths)
@@ -353,6 +428,7 @@ healthcare-patient-flow-analytics/
 ├── prepare_data.py         # Phase 2: validate, clean, load SQLite, quality report
 ├── analyze_data.py         # Phase 3: SQL views, reconciliation, CSV exports
 ├── create_excel_report.py  # Phase 3: Excel workbook
+├── prepare_powerbi_data.py # Phase 4A: Power BI snapshot and reference KPIs
 └── requirements.txt
 ```
 
@@ -363,7 +439,9 @@ healthcare-patient-flow-analytics/
 | 1 | Project structure, synthetic data generator, tests | Done |
 | 2 | Validation, cleaning, derived fields, SQLite database, data-quality report, tests | Done |
 | 3 | SQL KPI views, reconciliation, analysis CSV exports, Excel report, tests | Done |
-| 4 | Power BI dashboard | Planned |
-| 5 | Final presentation: dashboard screenshots and final documentation | Planned |
+| 4 | Power BI dashboard: **4A** data package, model, DAX, theme and guides (prepared); **4B** `.pbix` built and verified by hand in Power BI Desktop, plus screenshots (not started) | In Progress |
+| 5 | Final presentation: final documentation | Planned |
 
-Planned phases are not built yet. Their details may change.
+Phase 4 stays *In Progress* until the `.pbix` file and screenshots exist and the
+verification checklist is complete. Planned work is not built yet, and its details may
+change.

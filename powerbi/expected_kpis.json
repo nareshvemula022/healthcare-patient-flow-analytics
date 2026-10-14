@@ -1,0 +1,86 @@
+{
+  "synthetic_data": true,
+  "description": "Reference KPI values for checking the Power BI dashboard with no slicers or filters applied. Calculated by the SQL view vw_overall_kpis (sql/02_create_analytics_views.sql). All data is synthetic.",
+  "dataset": {
+    "note": "Values come from the database that was current when prepare_powerbi_data.py ran. The README workflow creates it with: python generate_data.py --appointments 5000 --seed 42",
+    "row_counts": {
+      "departments.csv": 6,
+      "providers.csv": 12,
+      "patients.csv": 1250,
+      "provider_schedules.csv": 626,
+      "appointments.csv": 5000,
+      "date.csv": 365
+    }
+  },
+  "reporting_period": {
+    "start": "2025-01-01",
+    "end": "2025-12-31"
+  },
+  "kpis": {
+    "Total Appointments": {
+      "value": 5000,
+      "display": "5,000",
+      "power_bi_format": "Whole number, thousands separator (#,0)"
+    },
+    "Unique Patients": {
+      "value": 1229,
+      "display": "1,229",
+      "power_bi_format": "Whole number, thousands separator (#,0)"
+    },
+    "Completed Appointments": {
+      "value": 4000,
+      "display": "4,000",
+      "power_bi_format": "Whole number, thousands separator (#,0)"
+    },
+    "Cancelled Appointments": {
+      "value": 573,
+      "display": "573",
+      "power_bi_format": "Whole number, thousands separator (#,0)"
+    },
+    "No Show Appointments": {
+      "value": 427,
+      "display": "427",
+      "power_bi_format": "Whole number, thousands separator (#,0)"
+    },
+    "Completion Rate": {
+      "value": 0.8,
+      "display": "80.0%",
+      "power_bi_format": "Percentage, 1 decimal (0.0%)"
+    },
+    "Cancellation Rate": {
+      "value": 0.1146,
+      "display": "11.5%",
+      "power_bi_format": "Percentage, 1 decimal (0.0%)"
+    },
+    "No Show Rate": {
+      "value": 0.0854,
+      "display": "8.5%",
+      "power_bi_format": "Percentage, 1 decimal (0.0%)"
+    },
+    "Average Wait Minutes": {
+      "value": 29.68725,
+      "display": "29.7",
+      "power_bi_format": "Decimal number, 1 decimal (0.0)"
+    },
+    "Average Visit Minutes": {
+      "value": 32.044,
+      "display": "32.0",
+      "power_bi_format": "Decimal number, 1 decimal (0.0)"
+    },
+    "Available Slots": {
+      "value": 6956,
+      "display": "6,956",
+      "power_bi_format": "Whole number, thousands separator (#,0)"
+    },
+    "Booking Rate": {
+      "value": 0.718803910293272,
+      "display": "71.9%",
+      "power_bi_format": "Percentage, 1 decimal (0.0%)"
+    },
+    "Completed Slot Utilization": {
+      "value": 0.5750431282346176,
+      "display": "57.5%",
+      "power_bi_format": "Percentage, 1 decimal (0.0%)"
+    }
+  }
+}

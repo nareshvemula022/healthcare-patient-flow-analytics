@@ -19,6 +19,10 @@ QUALITY_REPORT_FILE = OUTPUT_DATA_DIR / QUALITY_REPORT_FILE_NAME
 ANALYTICS_VIEWS_FILE = PROJECT_ROOT / "sql" / "02_create_analytics_views.sql"
 ANALYTICS_OUTPUT_DIR = OUTPUT_DATA_DIR / "analytics"
 EXCEL_REPORT_FILE = PROJECT_ROOT / "reports" / "healthcare_patient_flow_report.xlsx"
+POWERBI_DIR = PROJECT_ROOT / "powerbi"
+POWERBI_DATA_DIR = POWERBI_DIR / "data"                   # tracked Power BI snapshot
+EXPECTED_KPIS_FILE = POWERBI_DIR / "expected_kpis.json"
+POWERBI_REPORT_FILE = POWERBI_DIR / "healthcare_patient_flow_dashboard.pbix"  # built by hand
 
 # --- Defaults for the command line ----------------------------------------
 DEFAULT_SEED = 42

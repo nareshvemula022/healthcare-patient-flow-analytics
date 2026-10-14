@@ -1,0 +1,149 @@
+// =====================================================================================
+// Healthcare Patient Flow & Operational Analytics - DAX measures (Phase 4A)
+// SYNTHETIC DATA ONLY. Nothing here describes real patients, providers or hospitals.
+//
+// How to add a measure in Power BI Desktop:
+//   1. Select the "Home table" named in the section heading in the Data pane.
+//   2. Home > New measure. Delete the placeholder text.
+//   3. Paste the measure: the name line and the expression lines below it.
+//   4. Measure tools > Format: choose the format in the "// Format:" line above it.
+//
+// These measures use the same definitions as Phase 3 (SQL views, Excel and README).
+// Every division uses DIVIDE, which returns BLANK instead of an error when the
+// denominator is 0 or blank.
+//
+// Table names used here (rename the queries to these when importing the CSV files):
+//   Appointments, ProviderSchedules, Providers, Departments, Patients, Date
+// "Date" needs single quotes in DAX: 'Date'[date].
+// =====================================================================================
+
+
+// -------------------------------------------------------------------------------------
+// 1. Appointment counts                                       Home table: Appointments
+// -------------------------------------------------------------------------------------
+
+// Total Appointments: every appointment row, whatever its status.
+// Format: Whole number, thousands separator (#,0)
+Total Appointments =
+COUNTROWS ( Appointments )
+
+// Unique Patients: distinct patients with at least one appointment in the filter.
+// Format: Whole number, thousands separator (#,0)
+Unique Patients =
+DISTINCTCOUNT ( Appointments[patient_id] )
+
+// Completed Appointments: appointments whose status is Completed.
+// Format: Whole number, thousands separator (#,0)
+Completed Appointments =
+CALCULATE ( [Total Appointments], Appointments[appointment_status] = "Completed" )
+
+// Cancelled Appointments: appointments whose status is Cancelled.
+// Format: Whole number, thousands separator (#,0)
+Cancelled Appointments =
+CALCULATE ( [Total Appointments], Appointments[appointment_status] = "Cancelled" )
+
+// No Show Appointments: appointments whose status is No Show.
+// Format: Whole number, thousands separator (#,0)
+No Show Appointments =
+CALCULATE ( [Total Appointments], Appointments[appointment_status] = "No Show" )
+
+// Note: the three status measures replace any filter on appointment_status. In a
+// visual that already splits by appointment_status (legend or axis), use
+// Total Appointments as the value instead.
+
+
+// -------------------------------------------------------------------------------------
+// 2. Status rates                                             Home table: Appointments
+// -------------------------------------------------------------------------------------
+
+// Completion Rate = Completed Appointments / Total Appointments
+// Format: Percentage, 1 decimal (0.0%)
+Completion Rate =
+DIVIDE ( [Completed Appointments], [Total Appointments] )
+
+// Cancellation Rate = Cancelled Appointments / Total Appointments
+// Format: Percentage, 1 decimal (0.0%)
+Cancellation Rate =
+DIVIDE ( [Cancelled Appointments], [Total Appointments] )
+
+// No Show Rate = No Show Appointments / Total Appointments
+// Format: Percentage, 1 decimal (0.0%)
+No Show Rate =
+DIVIDE ( [No Show Appointments], [Total Appointments] )
+
+
+// -------------------------------------------------------------------------------------
+// 3. Durations (Completed appointments only)                  Home table: Appointments
+// -------------------------------------------------------------------------------------
+
+// Average Wait Minutes: average of wait_minutes (check-in to seen), Completed only.
+// Format: Decimal number, 1 decimal (0.0)
+Average Wait Minutes =
+CALCULATE (
+    AVERAGE ( Appointments[wait_minutes] ),
+    Appointments[appointment_status] = "Completed"
+)
+
+// Average Visit Minutes: average of visit_minutes (seen to checkout), Completed only.
+// Format: Decimal number, 1 decimal (0.0)
+Average Visit Minutes =
+CALCULATE (
+    AVERAGE ( Appointments[visit_minutes] ),
+    Appointments[appointment_status] = "Completed"
+)
+
+
+// -------------------------------------------------------------------------------------
+// 4. Capacity                                            Home table: ProviderSchedules
+// -------------------------------------------------------------------------------------
+// FILTER-CONTEXT LIMITATION
+// Capacity comes from ProviderSchedules. It is filtered by Date, Departments and
+// Providers only. Use Available Slots, Booking Rate and Completed Slot Utilization with
+// Date, Department and Provider filters. Do NOT use them with appointment type, age
+// group, gender, insurance type or any other patient or appointment field: those
+// filters reduce the appointment count but not the slots (slots are not reserved per
+// patient group or appointment type), so the result would look like a rate but would
+// not mean anything.
+
+// Available Slots: sum of available_slots across the provider clinic days in the filter.
+// Format: Whole number, thousands separator (#,0)
+Available Slots =
+SUM ( ProviderSchedules[available_slots] )
+
+// Booking Rate = Total Appointments / Available Slots
+// Every status (Completed, Cancelled, No Show) used up a booked slot.
+// Format: Percentage, 1 decimal (0.0%)
+Booking Rate =
+DIVIDE ( [Total Appointments], [Available Slots] )
+
+// Completed Slot Utilization = Completed Appointments / Available Slots
+// Format: Percentage, 1 decimal (0.0%)
+Completed Slot Utilization =
+DIVIDE ( [Completed Appointments], [Available Slots] )
+
+
+// -------------------------------------------------------------------------------------
+// 5. Month over month                                         Home table: Appointments
+// -------------------------------------------------------------------------------------
+// Use these in a visual or table with 'Date'[year_month] (or a single month) in the
+// filter. They need the Date table marked as a date table (see the build guide).
+// January 2025 has no previous month in the data, so its values are blank.
+
+// Previous Month Appointments: Total Appointments for the month before.
+// Format: Whole number, thousands separator (#,0)
+Previous Month Appointments =
+CALCULATE ( [Total Appointments], DATEADD ( 'Date'[date], -1, MONTH ) )
+
+// Month over Month Change = this month - previous month (blank if no previous month).
+// Format: Whole number, thousands separator (#,0)
+Month over Month Change =
+IF (
+    ISBLANK ( [Previous Month Appointments] ),
+    BLANK (),
+    [Total Appointments] - [Previous Month Appointments]
+)
+
+// Month over Month Change Percent = change / previous month.
+// Format: Percentage, 1 decimal (0.0%)
+Month over Month Change Percent =
+DIVIDE ( [Month over Month Change], [Previous Month Appointments] )

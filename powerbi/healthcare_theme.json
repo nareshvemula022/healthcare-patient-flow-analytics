@@ -1,0 +1,85 @@
+{
+  "name": "Healthcare Patient Flow (synthetic data)",
+  "dataColors": [
+    "#2F6DB5",
+    "#1A8A7D",
+    "#D97B29",
+    "#B4474F",
+    "#5A6472",
+    "#7FA7D9",
+    "#1B2A41",
+    "#A9B4C2"
+  ],
+  "foreground": "#252B33",
+  "foregroundNeutralSecondary": "#5A6472",
+  "background": "#FFFFFF",
+  "backgroundLight": "#F4F6F8",
+  "backgroundNeutral": "#D5DBE2",
+  "tableAccent": "#2F6DB5",
+  "good": "#1A8A7D",
+  "neutral": "#D97B29",
+  "bad": "#B4474F",
+  "maximum": "#2F6DB5",
+  "center": "#9FBFE3",
+  "minimum": "#F4F6F8",
+  "textClasses": {
+    "callout": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 24,
+      "color": "#1B2A41"
+    },
+    "title": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 12,
+      "color": "#1B2A41"
+    },
+    "header": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 12,
+      "color": "#1B2A41"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "fontSize": 10,
+      "color": "#252B33"
+    }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "title": [
+          {
+            "show": true,
+            "fontColor": { "solid": { "color": "#1B2A41" } },
+            "fontFamily": "Segoe UI Semibold",
+            "fontSize": 12
+          }
+        ],
+        "background": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#FFFFFF" } },
+            "transparency": 0
+          }
+        ],
+        "border": [{ "show": false }],
+        "dropShadow": [{ "show": false }]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": { "solid": { "color": "#F4F6F8" } },
+            "transparency": 0
+          }
+        ],
+        "outspace": [
+          {
+            "color": { "solid": { "color": "#F4F6F8" } }
+          }
+        ]
+      }
+    }
+  }
+}
