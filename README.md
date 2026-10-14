@@ -15,17 +15,24 @@ utilization, appointment status (completed, cancelled, no-show), and trends over
 synthetic data  ->  Python/Pandas cleaning  ->  SQL analysis  ->  Excel outputs  ->  Power BI dashboard
 ```
 
-Planned tools: Python, Pandas, SQL, Excel, Power BI. Only the first step exists so far
-(see [Roadmap](#roadmap)).
+Planned tools: Python, Pandas, SQL, Excel, Power BI. The synthetic data, the Python/Pandas
+cleaning and the SQLite database exist so far. SQL analysis, Excel outputs and the
+Power BI dashboard are not built yet (see [Roadmap](#roadmap)).
 
-## Current status: Phase 1
+## Current status: Phases 1 and 2
 
-- Project folder structure.
+**Phase 1: synthetic data**
 - A deterministic synthetic data generator: the same seed always gives the same files.
 - Five related CSV tables written to `data/raw/`.
-- Automated tests (pytest) for files, columns, keys, timestamps and repeatability.
 
-### Generated tables
+**Phase 2: cleaning, validation and SQLite**
+- `prepare_data.py` checks the raw files, builds cleaned CSV files in `data/processed/`,
+  loads them into a local SQLite database, and writes a data-quality report.
+- `sql/01_create_schema.sql` defines the database tables, keys, checks and indexes.
+
+Both phases are covered by automated tests (pytest).
+
+### Raw tables (Phase 1)
 
 | File | One row per | Columns |
 |---|---|---|
@@ -57,6 +64,99 @@ Planned tools: Python, Pandas, SQL, Excel, Power BI. Only the first step exists 
   adults; Family Medicine sees everyone. A patient has at most one appointment per day.
 - All settings live in `config.py`.
 
+## Phase 2: raw to processed
+
+```
+data/raw/*.csv  ->  prepare_data.py  ->  data/processed/*.csv
+                                          data/processed/healthcare_analytics.db
+                                          data/output/phase2_data_quality.json
+```
+
+`prepare_data.py` runs these steps in order:
+
+1. **Read** the five raw CSV files. If any file is missing, it stops and explains how to
+   run `generate_data.py`.
+2. **Tidy:** remove accidental spaces around values. This is the only automatic fix.
+3. **Validate.** Every rule must pass:
+   - required columns exist, and required values are not blank;
+   - primary keys are unique;
+   - foreign keys match their parent tables;
+   - each appointment falls on one of its provider's clinic days;
+   - each appointment's and schedule's department matches the provider's department;
+   - age is a whole number from 0 to 120, and age_group matches age;
+   - appointment status is `Completed`, `Cancelled` or `No Show`, and the appointment
+     type is one of the four known types;
+   - provider capacity is a positive whole number, and schedule slots are a whole number
+     from 0 to the provider's capacity;
+   - bookings per provider per day do not exceed the available slots;
+   - Completed appointments have valid times in the order check-in ≤ seen ≤ checkout;
+   - Cancelled and No Show appointments have blank check-in, seen and checkout times.
+
+   If any rule fails, the script stops with a message listing each problem and example
+   IDs. It writes a report with `"pipeline_status": "failed"` and leaves the processed
+   folder unchanged.
+4. **Clean:** convert numbers to integers, build full datetimes, calculate durations, and
+   sort each table by its key. The result goes to `data/processed/*.csv`.
+5. **Load SQLite:** rebuild `data/processed/healthcare_analytics.db` from
+   `sql/01_create_schema.sql`, load the tables in dependency order (departments,
+   providers, patients, provider_schedules, appointments), confirm the row counts match
+   the CSV files, and run `PRAGMA foreign_key_check`.
+6. **Report:** write `data/output/phase2_data_quality.json` with the following:
+   - row counts;
+   - duplicate-key, blank-value, foreign-key and rule-violation counts;
+   - appointment status counts;
+   - minimum, maximum and average wait and visit minutes;
+   - the foreign-key check result;
+   - a synthetic-data notice.
+
+   It has no timestamp, so the same input always gives the same file.
+
+Running the script again is safe. It overwrites the processed CSV files and the report,
+and drops and recreates the database tables.
+
+### Processed appointment fields
+
+Raw `HH:MM` times are combined with `appointment_date` into datetimes stored as ISO text,
+`YYYY-MM-DD HH:MM:SS`. Dates are stored as `YYYY-MM-DD`.
+
+| Field | Meaning |
+|---|---|
+| `scheduled_datetime` | Booked start time (all appointments) |
+| `check_in_datetime`, `seen_datetime`, `checkout_datetime` | Visit times (Completed only, blank otherwise) |
+| `wait_minutes` | `seen_datetime - check_in_datetime` (Completed only) |
+| `visit_minutes` | `checkout_datetime - seen_datetime` (Completed only) |
+
+**Early check-in is valid.** Patients may check in before their scheduled time, and
+`wait_minutes` starts at the actual check-in, not at the scheduled time. A patient who
+arrives 15 minutes early and is seen on time therefore has a 15-minute wait. For Cancelled
+and No Show appointments, the visit times and both durations are blank in the CSV and NULL
+in the database.
+
+### Database tables
+
+SQLite file: `data/processed/healthcare_analytics.db`. It is created by Python's built-in
+`sqlite3` module, with foreign-key enforcement turned on.
+
+| Table | Primary key | Contents |
+|---|---|---|
+| `departments` | `department_id` | The six clinic departments |
+| `providers` | `provider_id` | Fictional providers, their department, specialty and daily slot capacity |
+| `patients` | `patient_id` | Fictional patients: age, age group, gender, city, insurance type |
+| `provider_schedules` | `schedule_date` + `provider_id` | Available slots per provider per clinic day (0 = provider away) |
+| `appointments` | `appointment_id` | Every booked appointment, with datetimes, durations, type and status |
+
+The schema also contains the following:
+- foreign keys between related tables, including appointments to provider schedules;
+- CHECK constraints for:
+  - age from 0 to 120;
+  - capacity above 0 and slots of 0 or more;
+  - valid status and type values;
+  - date and datetime formats;
+  - time order;
+  - non-negative durations;
+  - visit times present only for Completed appointments;
+- indexes on appointment date, status, department, provider and patient.
+
 ## Setup and run (Windows PowerShell)
 
 Tested with Python 3.12 (pandas 3 needs Python 3.11 or newer). Run these from the project
@@ -70,11 +170,14 @@ python -m venv .venv
 # 2. Install dependencies
 python -m pip install -r requirements.txt
 
-# 3. Generate the data (writes five CSV files to data\raw)
+# 3. Generate the raw synthetic data (five CSV files in data\raw)
 python generate_data.py --appointments 5000 --seed 42
 
-# 4. Run the tests
-python -m pytest
+# 4. Validate, clean and load into SQLite (data\processed and data\output)
+python prepare_data.py
+
+# 5. Run the tests
+python -m pytest -q
 ```
 
 If PowerShell blocks `Activate.ps1`, run
@@ -90,24 +193,33 @@ Generator options:
 | `--patients` | appointments / 4 | Number of patients |
 | `--output-dir` | `data\raw` | Folder for the CSV files |
 
-The generated CSV files are not tracked by git. Re-create them at any time with step 3.
+`prepare_data.py` options: `--raw-dir`, `--processed-dir` and `--output-dir`. The defaults
+are `data\raw`, `data\processed` and `data\output`.
+
+Generated CSV files, the database and the JSON report are not tracked by git. Re-create
+them at any time with steps 3 and 4.
 
 ## Folder structure
 
 ```
 healthcare-patient-flow-analytics/
 ├── data/
-│   ├── raw/            # generated synthetic CSV files
-│   ├── processed/      # (later phase) cleaned data
-│   └── output/         # (later phase) analysis outputs for Excel / Power BI
-├── sql/                # (later phase) SQL analysis queries
+│   ├── raw/            # generated synthetic CSV files (Phase 1)
+│   ├── processed/      # cleaned CSV files + healthcare_analytics.db (Phase 2)
+│   └── output/         # phase2_data_quality.json (Phase 2); later: Excel outputs
+├── sql/
+│   └── 01_create_schema.sql   # SQLite tables, keys, checks, indexes
 ├── powerbi/            # (later phase) Power BI report file
 ├── screenshots/        # (later phase) dashboard screenshots
-├── tests/              # pytest tests for the generator
+├── tests/
+│   ├── conftest.py
+│   ├── test_generate_data.py   # Phase 1 tests
+│   └── test_prepare_data.py    # Phase 2 tests
 ├── .gitignore
 ├── README.md
-├── config.py           # all generator settings
-├── generate_data.py    # synthetic data generator
+├── config.py           # all settings (generator, file paths)
+├── generate_data.py    # Phase 1: synthetic data generator
+├── prepare_data.py     # Phase 2: validate, clean, load SQLite, quality report
 └── requirements.txt
 ```
 
@@ -116,7 +228,7 @@ healthcare-patient-flow-analytics/
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Project structure, synthetic data generator, tests | Done |
-| 2 | Python/Pandas cleaning and derived fields (e.g. wait minutes) into `data/processed` | Planned |
+| 2 | Validation, cleaning, derived fields, SQLite database, data-quality report, tests | Done |
 | 3 | SQL analysis queries for KPIs (volume, wait time, utilization, no-show rate) | Planned |
 | 4 | Excel summary outputs in `data/output` | Planned |
 | 5 | Power BI dashboard and screenshots | Planned |

@@ -1,4 +1,4 @@
-"""Project settings for the synthetic data generator.
+"""Project settings for the synthetic data generator and the data pipeline.
 
 Everything that controls the shape of the generated data lives here, so it can
 be changed in one place. All names and values describe a FICTIONAL clinic.
@@ -6,9 +6,14 @@ be changed in one place. All names and values describe a FICTIONAL clinic.
 
 from pathlib import Path
 
-# --- Folders --------------------------------------------------------------
+# --- Folders and files -------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
 RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
+PROCESSED_DATA_DIR = PROJECT_ROOT / "data" / "processed"
+OUTPUT_DATA_DIR = PROJECT_ROOT / "data" / "output"
+SCHEMA_FILE = PROJECT_ROOT / "sql" / "01_create_schema.sql"
+DATABASE_FILE_NAME = "healthcare_analytics.db"            # saved in PROCESSED_DATA_DIR
+QUALITY_REPORT_FILE_NAME = "phase2_data_quality.json"     # saved in OUTPUT_DATA_DIR
 
 # --- Defaults for the command line ----------------------------------------
 DEFAULT_SEED = 42
